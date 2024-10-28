@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:vinny_ai_chat/view/auth_view/loginView.dart';
 import 'package:vinny_ai_chat/view/auth_view/signupView.dart';
 
 import 'helper/transition.dart';
@@ -85,10 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text("have an account? ",
                               style:
                                   TextStyle(color: Colors.white, fontSize: 14)),
-                          Text(
-                            "Login now",
-                            style: TextStyle(
-                                color: Color(0xFF03BCBF), fontSize: 14),
+                          GestureDetector(
+                            onTap: ()=>Navigator.push(context,FadePageRouteBuilder(widget: LoginView())),
+                            child: Text(
+                              "Login now",
+                              style: TextStyle(
+                                  color: Color(0xFF03BCBF), fontSize: 14),
+                            ),
                           )
                         ],
                       )

@@ -3,7 +3,10 @@ import 'dart:ui';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants{
+
  static final  apiKey = dotenv.env['API_KEY'];
+
+ static String baseUrl = "https://stagingvinnyai.appjeeni.com/public/api";
  static String homeUnselected = "assets/svg/homeUnselected.svg";
  static String homeSelected = "assets/svg/homeSelected.svg";
  static String chatSelected = "assets/svg/chatSelected.svg";

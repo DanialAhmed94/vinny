@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'package:flutter/cupertino.dart'; // For CupertinoAlertDialog
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:vinny_ai_chat/apis/login_api.dart'; // Import your login API
 import 'package:vinny_ai_chat/view/welcome/welcomeView.dart';
 
 import '../../helper/transition.dart';
@@ -8,19 +11,40 @@ class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
   @override
-  State<LoginView> createState() => _SignupState();
+  State<LoginView> createState() => _LoginViewState();
 }
 
-class _SignupState extends State<LoginView> {
+class _LoginViewState extends State<LoginView> {
   bool isChecked = false;
+
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+
+  bool _isLoading = false; // Loading state variable
+  bool _obscurePassword = true; // Password visibility toggle
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
+        // Ensure the content resizes when the keyboard appears
+        fit: StackFit.expand,
         children: [
           SvgPicture.asset(
-            'assets/svg/plan_background.svg', // Path to your SVG file
+            'assets/svg/plan_background.svg',
             fit: BoxFit.cover,
           ),
           Column(
@@ -32,192 +56,302 @@ class _SignupState extends State<LoginView> {
                   style: TextStyle(fontSize: 22, color: Colors.white),
                 ),
                 backgroundColor: Colors.transparent,
-                // Make the AppBar transparent
                 elevation: 0,
                 iconTheme: IconThemeData(
-                  color: Colors.white, // Set the color of the back button
+                  color: Colors.white,
                 ),
               ),
-              SizedBox(
-                height: 20,
-              ),
+              SizedBox(height: 20),
               Expanded(
                 child: SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: 20),
                   child: Padding(
-                    padding: const EdgeInsets.only(right: 25, left: 25),
-                    child: Form(
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        inputDecorationTheme: InputDecorationTheme(
+                          errorStyle: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      child: Form(
+                        key: _formKey,
                         child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Email",
-                          style: TextStyle(color: Colors.white, fontSize: 14),
-                        ),
-                        TextFormField(
-                          style: TextStyle(color: Colors.white),
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(
-                              vertical: 10.0,
-                              horizontal: 10,
-                            ),
-                            hintText: 'Enter your email address',
-                            hintStyle: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
-                                fontSize: 12),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                            // focusedBorder: UnderlineInputBorder(
-                            //   borderSide: BorderSide(color: Colors.white),
-                            // ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 20,
-                        ),
-                        Text(
-                          "Password",
-                          style: TextStyle(color: Colors.white, fontSize: 14),
-                        ),
-                        TextFormField(
-                          style: TextStyle(color: Colors.white),
-                          keyboardType: TextInputType.text,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(
-                              vertical: 10.0,
-                              horizontal: 10,
-                            ),
-                            hintText: 'Enter your password',
-                            hintStyle: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
-                                fontSize: 12),
-                            suffixIcon: Icon(
-                              Icons.visibility_off,
-                              color: Colors.white,
-                            ),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                            // focusedBorder: UnderlineInputBorder(
-                            //   borderSide: BorderSide(color: Colors.white),
-                            // ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 20,
-                        ),
-                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Theme(
-                              child: Checkbox(
-                                side: BorderSide(
-                                  // ======> CHANGE THE BORDER COLOR HERE <======
-                                  color: Colors.white,
-                                  // Give your checkbox border a custom width
-                                  width: 1.5,
-                                ),
-                                value: isChecked,
-                                // Initial value of the checkbox
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    isChecked = value ?? false;
-                                  });
-                                },
-                              ),
-                              data: ThemeData(
-                                primarySwatch: Colors.blue,
-                                unselectedWidgetColor: Colors.red, // Your color
+                            // Email Label with red asterisk
+                            RichText(
+                              text: TextSpan(
+                                text: "Email",
+                                style: TextStyle(color: Colors.white, fontSize: 14),
+                                children: [
+                                  TextSpan(
+                                    text: " *",
+                                    style: TextStyle(color: Colors.red, fontSize: 14),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              'Remember me',
+                            TextFormField(
+                              controller: _emailController,
+                              focusNode: _emailFocusNode,
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (_) {
+                                FocusScope.of(context)
+                                    .requestFocus(_passwordFocusNode);
+                              },
                               style: TextStyle(color: Colors.white),
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: InputDecoration(
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 10.0,
+                                  horizontal: 10,
+                                ),
+                                hintText: 'Enter your email address',
+                                hintStyle: TextStyle(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 12),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.white),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter an email';
+                                }
+                                final emailRegex = RegExp(
+                                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                if (!emailRegex.hasMatch(value)) {
+                                  return 'Enter a valid email';
+                                }
+                                return null;
+                              },
                             ),
-                            Spacer(),
-                            Text(
-                              "Forgot Password?",
-                              style: TextStyle(color: Color(0xFF03BCBF)),
-                            )
-                          ],
-                        ),
-                        SizedBox(
-                          height: 20,
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            FadePageRouteBuilder(
-                              widget: Welcomeview(),
+                            SizedBox(height: 20),
+                            // Password Label with red asterisk
+                            RichText(
+                              text: TextSpan(
+                                text: "Password",
+                                style: TextStyle(color: Colors.white, fontSize: 14),
+                                children: [
+                                  TextSpan(
+                                    text: " *",
+                                    style: TextStyle(color: Colors.red, fontSize: 14),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Center(
-                            child: Container(
-                              height: 50,
-                              width: MediaQuery.of(context).size.width * 0.9,
-                              decoration: BoxDecoration(
-                                  color: Color(0xFF03BCBF),
-                                  borderRadius: BorderRadius.circular(20)),
+                            TextFormField(
+                              controller: _passwordController,
+                              focusNode: _passwordFocusNode,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) {
+                                FocusScope.of(context).unfocus();
+                              },
+                              style: TextStyle(color: Colors.white),
+                              keyboardType: TextInputType.text,
+                              decoration: InputDecoration(
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 10.0,
+                                  horizontal: 10,
+                                ),
+                                hintText: 'Enter your password',
+                                hintStyle: TextStyle(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 12),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.white),
+                                ),
+                              ),
+                              obscureText: _obscurePassword,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter a password';
+                                }
+                                if (value.length < 6) {
+                                  return 'Password must be at least 6 characters long';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Theme(
+                                  data: ThemeData(
+                                    unselectedWidgetColor: Colors.white,
+                                  ),
+                                  child: Checkbox(
+                                    side: BorderSide(
+                                      color: Colors.white,
+                                      width: 1.5,
+                                    ),
+                                    value: isChecked,
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        isChecked = value ?? false;
+                                      });
+                                    },
+                                    activeColor: Colors.white,
+                                    checkColor: Colors.black,
+                                  ),
+                                ),
+                                Text(
+                                  'Remember me',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                Spacer(),
+                                Text(
+                                  "Forgot Password?",
+                                  style: TextStyle(color: Color(0xFF03BCBF)),
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 20),
+                            GestureDetector(
+                              onTap: () async {
+                                if (_formKey.currentState!.validate()) {
+                                  setState(() {
+                                    _isLoading = true;
+                                  });
+
+                                  final result = await loginUser(
+                                    email: _emailController.text.trim(),
+                                    password: _passwordController.text,
+                                    auth_provider: 'email',
+                                  );
+
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+
+                                  if (result['success']) {
+                                    // Navigate to WelcomeView
+                                    Navigator.push(
+                                      context,
+                                      FadePageRouteBuilder(
+                                        widget: Welcomeview(),
+                                      ),
+                                    );
+                                  } else {
+                                    // Show platform-specific error message
+                                    if (Platform.isAndroid) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(result['message']),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    } else if (Platform.isIOS) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return CupertinoAlertDialog(
+                                            title: Text('Error'),
+                                            content: Text(result['message']),
+                                            actions: [
+                                              CupertinoDialogAction(
+                                                isDefaultAction: true,
+                                                child: Text('OK'),
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    } else {
+                                      // Fallback for other platforms
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(result['message']),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
                               child: Center(
-                                  child: Text(
-                                "Login",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 14),
-                                textAlign: TextAlign.center,
-                              )),
+                                child: Container(
+                                  height: 50,
+                                  width: MediaQuery.of(context).size.width * 0.9,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF03BCBF),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Center(
+                                    child: _isLoading
+                                        ? CircularProgressIndicator(
+                                      valueColor:
+                                      AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    )
+                                        : Text(
+                                      "Login",
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 20,
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              height: 1,
-                              // Adjust the height of the line as needed
-                              width: MediaQuery.of(context).size.width * 0.25,
-                              // Adjust the width of the line as needed
-                              color: Colors.white, // Color of the line
+                            SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    height: 1,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  "or continue with",
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.white),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Container(
+                                    height: 1,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
-                            SizedBox(width: 10),
-                            // Space between the line and the text
-                            Text(
-                              "or continue with",
-                              style:
-                                  TextStyle(fontSize: 14, color: Colors.white),
-                            ),
-                            SizedBox(width: 10),
-                            // Space between the text and the new line
-                            Container(
-                              height: 1,
-                              // Adjust the height of the line as needed
-                              width: MediaQuery.of(context).size.width * 0.25,
-                              // Adjust the width of the line as needed
-                              color: Colors.white, // Color of the line
+                            SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SvgPicture.asset("assets/svg/google svg.svg"),
+                                SizedBox(width: 10),
+                                SvgPicture.asset(
+                                  "assets/svg/apple svg.svg",
+                                  height: 36,
+                                  width: 36,
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset("assets/svg/google svg.svg"),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            SvgPicture.asset(
-                              "assets/svg/apple svg.svg",
-                              height: 36,
-                              width: 36,
-                            ),
-                          ],
-                        ),
-                      ],
-                    )),
+                      ),
+                    ),
                   ),
                 ),
               ),
