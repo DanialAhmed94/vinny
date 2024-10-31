@@ -8,7 +8,8 @@ Future<Map<String, dynamic>> signupUser({
    String? email,
    String? username,
    String? password,
-   String? auth_provider
+   String? auth_provider,
+  String? google_id
 }) async {
   String trialStartDate = DateTime.now().toString();
   int trialDays = 7;
@@ -28,6 +29,7 @@ Future<Map<String, dynamic>> signupUser({
         'name': username,
         'password': password,
         'auth_provider': auth_provider,
+        'google_id':google_id,
         'trial_start_date': trialStartDate,
         'trial_end_date':trialEndDate,
       }),

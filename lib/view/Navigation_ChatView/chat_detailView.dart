@@ -3,6 +3,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vinny_ai_chat/dataModels/BotsMoel.dart';
 import 'package:vinny_ai_chat/view/Navigation_ChatView/boatProfileDetail_view.dart';
 import '../../Providers/chat_provider.dart';
 import '../../constants/AppConstants.dart';
@@ -10,9 +11,9 @@ import '../../helper/transition.dart';
 
 
 class ChatDetailView extends StatefulWidget {
-  final String chatTitle;
+  final Bot bot;
 
-  const ChatDetailView({Key? key, required this.chatTitle}) : super(key: key);
+  const ChatDetailView({Key? key, required this.bot}) : super(key: key);
 
   @override
   _ChatDetailViewState createState() => _ChatDetailViewState();
@@ -74,7 +75,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 context, FadePageRouteBuilder(widget: BoatprofiledetailView()));
           },
           child: Text(
-            widget.chatTitle,
+            widget.bot.botName,
             style: TextStyle(
               fontFamily: "InterRegular",
               fontSize: 20,
@@ -94,7 +95,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (context, chatProvider, _) {
-                final messages = chatProvider.getMessages(widget.chatTitle);
+                final messages = chatProvider.getMessages(widget.bot.botName);
                 final reversedMessages = messages.reversed.toList();
 
                 if (reversedMessages.isEmpty) {
@@ -294,7 +295,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                     if (_controller.text.isNotEmpty) {
                                       FocusScope.of(context).unfocus();
                                       chatProvider.sendMessage(
-                                          widget.chatTitle, _controller.text);
+                                          widget.bot.botName, _controller.text,widget.bot.setOfRules);
                                       _controller.clear();
                                       _onNewMessage();
                                       chatProvider.setTyping(false);

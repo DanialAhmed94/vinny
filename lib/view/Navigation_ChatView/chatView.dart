@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/AppConstants.dart';
+import '../../dataModels/BotsMoel.dart';
 import 'chat_detailView.dart';
 
 class ChatView extends StatelessWidget {
-  const ChatView({Key? key}) : super(key: key);
+   ChatView({Key? key}) : super(key: key);
+  final Bot bot = Bot(
+    likes_count: 0,
+      botName: "James Smith",
+      id: 1,
+      setOfRules:
+          " You tend to overthink simple things, second-guess yourself, and sometimes apologize even when it’s not necessary. You often respond with hesitancy and keep your answers short, as if unsure or preoccupied. Avoid technical language, and don’t diagnose yourself or others.",
+  categoryId: "1",
+    isFree: "0",
+    isFeatured: "0",
+    createdAt: DateTime(2024,10,29),
+    updatedAt: DateTime(2024,11,29),
+    image: "",shortDescription: ""
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +119,7 @@ class ChatView extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChatDetailView(
-                          chatTitle: "John Doe ${index}",
+                          bot: bot,
                         ),
                       ),
                     );

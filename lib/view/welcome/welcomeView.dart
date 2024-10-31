@@ -56,11 +56,12 @@ class Welcomeview extends StatelessWidget {
             left: 20,
             bottom: 100,
           child:  GestureDetector(
-            onTap: ()=>Navigator.push(
+            onTap: ()=>Navigator.pushAndRemoveUntil(
               context,
               FadePageRouteBuilder(
                 widget: Getstartedview(),
               ),
+                (Route<dynamic> route) => false
             ),
             child: Center(
               child: Container(

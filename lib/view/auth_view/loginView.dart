@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart'; // For CupertinoAlertDialog
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vinny_ai_chat/apis/login_api.dart'; // Import your login API
 import 'package:vinny_ai_chat/view/welcome/welcomeView.dart';
 
+import '../../apis/loginWithGoogle.dart';
 import '../../helper/transition.dart';
 
 class LoginView extends StatefulWidget {
@@ -24,9 +28,82 @@ class _LoginViewState extends State<LoginView> {
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
 
-  bool _isLoading = false; // Loading state variable
+  bool _isLoading = false;
+  bool _isGoogleLoading = false; // New variable for Google loading
   bool _obscurePassword = true; // Password visibility toggle
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    setState(() {
+      _isGoogleLoading = true; // Show loading indicator on Google icon
+    });
+
+    try {
+      print('user is empty.........***********');
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+        return;
+      } // Sign in aborted
+
+      final GoogleSignInAuthentication googleAuth =
+      await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+      await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userName', "${user!.displayName}");
+      await prefs.setString('userEmail', "${user!.email}");
+
+
+
+      if (user != null) {
+        // Send user information to signup API
+        final result = await loginWithGoogle(
+          email: user.email!,
+          username: user.displayName ?? user.email!.split('@')[0],
+          auth_provider: "google",
+          google_id: user.uid,
+        );
+        setState(() {
+          _isGoogleLoading = false;
+        });
+
+        if (result['success']) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            FadePageRouteBuilder(widget: Welcomeview()),(Route<dynamic> route) => false,
+          );
+        } else {
+          // Handle error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        print('user is empty.........***********');
+      }
+    } catch (e) {
+      print("Google Sign-In error: $e");
+    } finally {
+      setState(() {
+        _isGoogleLoading = false; // Hide loading indicator on Google icon
+      });
+    }
+  }
   @override
   void dispose() {
     _emailController.dispose();
@@ -222,6 +299,7 @@ class _LoginViewState extends State<LoginView> {
                             SizedBox(height: 20),
                             GestureDetector(
                               onTap: () async {
+                                FocusScope.of(context).unfocus();
                                 if (_formKey.currentState!.validate()) {
                                   setState(() {
                                     _isLoading = true;
@@ -239,11 +317,11 @@ class _LoginViewState extends State<LoginView> {
 
                                   if (result['success']) {
                                     // Navigate to WelcomeView
-                                    Navigator.push(
+                                    Navigator.pushAndRemoveUntil(
                                       context,
                                       FadePageRouteBuilder(
-                                        widget: Welcomeview(),
-                                      ),
+                                        widget: Welcomeview()
+                                      ),(Route<dynamic> route) => false,
                                     );
                                   } else {
                                     // Show platform-specific error message
@@ -339,13 +417,22 @@ class _LoginViewState extends State<LoginView> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SvgPicture.asset("assets/svg/google svg.svg"),
-                                SizedBox(width: 10),
-                                SvgPicture.asset(
-                                  "assets/svg/apple svg.svg",
-                                  height: 36,
-                                  width: 36,
+                                GestureDetector(
+                                  onTap: ()async{
+                                    _handleGoogleSignIn(context);
+                                  },
+                                  child: _isGoogleLoading
+                                      ? CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  )
+                                      : SvgPicture.asset("assets/svg/google svg.svg"),
                                 ),
+                                SizedBox(width: 10),
+                                // SvgPicture.asset(
+                                //   "assets/svg/apple svg.svg",
+                                //   height: 36,
+                                //   width: 36,
+                                // ),
                               ],
                             ),
                           ],

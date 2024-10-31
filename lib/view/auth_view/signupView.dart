@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart'; // Import for CupertinoAlertDialog
 import 'package:flutter_svg/svg.dart';
 import 'package:vinny_ai_chat/view/auth_view/loginView.dart';
+import 'package:vinny_ai_chat/view/welcome/welcomeView.dart';
 
+import '../../apis/loginWithGoogle.dart';
 import '../../apis/signUp_api.dart';
 import '../../helper/transition.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class SignupView extends StatefulWidget {
   const SignupView({super.key});
@@ -25,8 +29,85 @@ class _SignupState extends State<SignupView> {
   final _usernameFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
+  bool _isLoading = false;
+  bool _isGoogleLoading = false; // New variable for Google loading
 
-  bool _isLoading = false; // Loading state variable
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    setState(() {
+      _isGoogleLoading = true; // Show loading indicator on Google icon
+    });
+
+    try {
+      print('user is empty.........***********');
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+        return;
+      } // Sign in aborted
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+      print(
+        '${user!.email}',
+      );
+      print(
+        '${user!.displayName}',
+      );
+      print(
+        '${user!.uid}',
+      );
+
+      if (user != null) {
+        // Send user information to signup API
+        final result = await loginWithGoogle(
+          email: user.email!,
+          username: user.displayName ?? user.email!.split('@')[0],
+          auth_provider: "google",
+          google_id: user.uid,
+        );
+        setState(() {
+          _isGoogleLoading = false;
+        });
+
+        if (result['success']) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            FadePageRouteBuilder(widget: Welcomeview()),(Route<dynamic> route) => false,
+          );
+        } else {
+          // Handle error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        print('user is empty.........***********');
+      }
+    } catch (e) {
+      print("Google Sign-In error: $e");
+    } finally {
+      setState(() {
+        _isGoogleLoading = false; // Hide loading indicator on Google icon
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -72,7 +153,8 @@ class _SignupState extends State<SignupView> {
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.only(bottom: 20), // Add some padding at the bottom
+                  padding: EdgeInsets.only(bottom: 20),
+                  // Add some padding at the bottom
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25),
                     child: Form(
@@ -105,7 +187,8 @@ class _SignupState extends State<SignupView> {
                               focusNode: _emailFocusNode,
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
-                                FocusScope.of(context).requestFocus(_usernameFocusNode);
+                                FocusScope.of(context)
+                                    .requestFocus(_usernameFocusNode);
                               },
                               style: TextStyle(color: Colors.white),
                               keyboardType: TextInputType.emailAddress,
@@ -126,8 +209,8 @@ class _SignupState extends State<SignupView> {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter an email';
                                 }
-                                final emailRegex = RegExp(
-                                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                final emailRegex =
+                                    RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
                                 if (!emailRegex.hasMatch(value)) {
                                   return 'Enter a valid email';
                                 }
@@ -156,7 +239,8 @@ class _SignupState extends State<SignupView> {
                               focusNode: _usernameFocusNode,
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
-                                FocusScope.of(context).requestFocus(_passwordFocusNode);
+                                FocusScope.of(context)
+                                    .requestFocus(_passwordFocusNode);
                               },
                               style: TextStyle(color: Colors.white),
                               keyboardType: TextInputType.text,
@@ -205,7 +289,8 @@ class _SignupState extends State<SignupView> {
                               focusNode: _passwordFocusNode,
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
-                                FocusScope.of(context).requestFocus(_confirmPasswordFocusNode);
+                                FocusScope.of(context)
+                                    .requestFocus(_confirmPasswordFocusNode);
                               },
                               style: TextStyle(color: Colors.white),
                               keyboardType: TextInputType.text,
@@ -296,6 +381,8 @@ class _SignupState extends State<SignupView> {
                             ),
                             GestureDetector(
                               onTap: () async {
+                                FocusScope.of(context).unfocus();
+
                                 if (_formKey.currentState!.validate()) {
                                   setState(() {
                                     _isLoading = true; // Start loading
@@ -365,8 +452,8 @@ class _SignupState extends State<SignupView> {
                               child: Center(
                                 child: Container(
                                   height: 50,
-                                  width: MediaQuery.of(context).size.width *
-                                      0.9,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.9,
                                   decoration: BoxDecoration(
                                     color: Color(0xFF03BCBF),
                                     borderRadius: BorderRadius.circular(20),
@@ -374,17 +461,17 @@ class _SignupState extends State<SignupView> {
                                   child: Center(
                                     child: _isLoading
                                         ? CircularProgressIndicator(
-                                      valueColor:
-                                      AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                    )
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
+                                          )
                                         : Text(
-                                      "Register",
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14),
-                                      textAlign: TextAlign.center,
-                                    ),
+                                            "Register",
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14),
+                                            textAlign: TextAlign.center,
+                                          ),
                                   ),
                                 ),
                               ),
@@ -398,18 +485,15 @@ class _SignupState extends State<SignupView> {
                                     fontSize: 11, color: Colors.white),
                                 children: [
                                   TextSpan(
-                                      text:
-                                      "By continuing, you agree to our "),
+                                      text: "By continuing, you agree to our "),
                                   TextSpan(
                                     text: "Terms of Service",
-                                    style:
-                                    TextStyle(color: Color(0xFF03BCBF)),
+                                    style: TextStyle(color: Color(0xFF03BCBF)),
                                   ),
                                   TextSpan(text: " and "),
                                   TextSpan(
                                     text: "Privacy Policy.",
-                                    style:
-                                    TextStyle(color: Color(0xFF03BCBF)),
+                                    style: TextStyle(color: Color(0xFF03BCBF)),
                                   ),
                                 ],
                               ),
@@ -446,17 +530,29 @@ class _SignupState extends State<SignupView> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SvgPicture.asset(
-                                    "assets/svg/google svg.svg"),
-                                SizedBox(width: 10),
-                                SvgPicture.asset(
-                                  "assets/svg/apple svg.svg",
-                                  height: 36,
-                                  width: 36,
+                                GestureDetector(
+                                  onTap: () async {
+                                    _handleGoogleSignIn(context);
+                                  },
+                                  child: _isGoogleLoading
+                                      ? CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                        )
+                                      : SvgPicture.asset(
+                                          "assets/svg/google svg.svg"),
                                 ),
+                                SizedBox(width: 10),
+                                // SvgPicture.asset(
+                                //   "assets/svg/apple svg.svg",
+                                //   height: 36,
+                                //   width: 36,
+                                // ),
                               ],
                             ),
-                            SizedBox(height: 20), // Add some space at the bottom
+                            SizedBox(height: 20),
+                            // Add some space at the bottom
                           ],
                         ),
                       ),

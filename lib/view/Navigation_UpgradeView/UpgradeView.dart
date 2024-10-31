@@ -1,29 +1,38 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-import '../../helper/transition.dart';
-import '../Navigation_Home/Navigation_Home.dart';
-class Upgradeview extends StatelessWidget {
-  const Upgradeview({super.key});
+
+
+class Upgradeview  extends StatelessWidget {
+  const Upgradeview ({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          SvgPicture.asset(
-            "assets/svg/Get Premium.svg",
+          Image.asset(
+            "assets/images/getPremiumBg.png",
             fit: BoxFit.cover,
           ),
           Positioned(
-              right: 20,
-              left: 20,
+
+              left: 8,
               //  bottom: 50,
-              bottom: MediaQuery.of(context).size.height * 0.08,
+              bottom: MediaQuery
+                  .of(context)
+                  .size
+                  .height * 0.08,
               child: Column(
                 children: [
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.9,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.9,
                     height: 80,
                     child: Card(
                       shape: RoundedRectangleBorder(
@@ -65,7 +74,7 @@ class Upgradeview extends StatelessWidget {
                               ],
                             ),
                             const Text(
-                              "\$999/year",
+                              "\$0/year",
                               style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.white,
@@ -80,7 +89,10 @@ class Upgradeview extends StatelessWidget {
                     height: 10,
                   ),
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.9,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.9,
                     height: 80,
                     child: Card(
                       shape: RoundedRectangleBorder(
@@ -122,7 +134,7 @@ class Upgradeview extends StatelessWidget {
                               ],
                             ),
                             Text(
-                              "\$999/year",
+                              "\$0/year",
                               style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.white,
@@ -133,27 +145,54 @@ class Upgradeview extends StatelessWidget {
                       ),
                     ),
                   ),
-                   SizedBox(
+                  SizedBox(
                     height: 20,
                   ),
                   GestureDetector(
-                    // onTap: ()=>Navigator.push(
-                    //   context,
-                    //   FadePageRouteBuilder(
-                    //     widget: NavigationHome(),
-                    //   ),
-                    // ),
+                    onTap: () {
+                      final message = "This feature is currently in development.";
+
+                      if (Platform.isIOS) {
+                        // For iOS, show a CupertinoAlertDialog
+                        showCupertinoDialog(
+                          context: context,
+                          builder: (context) =>
+                              CupertinoAlertDialog(
+                                content: Text(message),
+                                actions: [
+                                  CupertinoDialogAction(
+                                    child: Text('OK'),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                  ),
+                                ],
+                              ),
+                        );
+                      } else {
+                        // For Android and other platforms, show a SnackBar
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(message),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
                     child: Center(
                       child: Container(
                         height: 50,
-                        width: MediaQuery.of(context).size.width * 0.9,
+                        width: MediaQuery
+                            .of(context)
+                            .size
+                            .width * 0.88,
                         decoration: BoxDecoration(
                             color: const Color(0xFF03BCBF),
                             borderRadius: BorderRadius.circular(20)),
                         child: Center(
                             child: Text(
                               "Upgrade your Plan",
-                              style: TextStyle(color: Colors.white, fontSize: 14),
+                              style: TextStyle(color: Colors.white,
+                                  fontSize: 14),
                               textAlign: TextAlign.center,
                             )),
                       ),

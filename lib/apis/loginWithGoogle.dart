@@ -5,14 +5,19 @@ import 'package:http/http.dart' as http;
 import 'package:vinny_ai_chat/constants/AppConstants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Logs in a user, saves the token, name, and email if successful, and returns a success or error message.
-Future<Map<String, dynamic>> loginUser({
+/// Signs up a user, saves the token, and returns a success or error message.
+Future<Map<String, dynamic>> loginWithGoogle({
   String? email,
-  String? password,
+  String? username,
   String? auth_provider,
+  String? google_id
 }) async {
+  String trialStartDate = DateTime.now().toString();
+  int trialDays = 7;
+  String trialEndDate = DateTime.now().add(Duration(days: trialDays)).toString();
+
   String baseurl = AppConstants.baseUrl;
-  final url = Uri.parse("$baseurl/authin"); // Adjust the endpoint as needed
+  final url = Uri.parse("$baseurl/google_login");
 
   try {
     final response = await http.post(
@@ -21,36 +26,25 @@ Future<Map<String, dynamic>> loginUser({
         'Content-Type': 'application/json',
       },
       body: json.encode({
-        'email': email ?? '',
-        'password': password ?? '',
-        'auth_provider': auth_provider ?? 'email',
+        'email': email,
+        'name': username,
+        'auth_provider': auth_provider,
+        'google_id':google_id,
+        'trial_start_date': trialStartDate,
+        'trial_end_date':trialEndDate,
       }),
     );
 
     final responseData = json.decode(response.body);
 
-    // Check for response code and handle each case
     if (response.statusCode == 200) {
-      // Case 1: Success - Save token, name, email and return success message
+      // Case 1: Success - Save token and return success message
       String? token = responseData['data']?['response']?['token'];
-
       if (token != null) {
-        // Get name and email from the response
-        String? name = responseData['data']?['user']?['name'];
-        String? email = responseData['data']?['user']?['email'];
-
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('bearerToken', token);
         await prefs.setBool("isLogedin", true);
         await prefs.setString('authProvider', auth_provider ?? 'email');
-
-        // Save name and email if they are not null
-        if (name != null) {
-          await prefs.setString('userName', name);
-        }
-        if (email != null) {
-          await prefs.setString('userEmail', email);
-        }
 
         return {
           'success': true,
@@ -66,13 +60,14 @@ Future<Map<String, dynamic>> loginUser({
       // Case 2: Trial expired
       return {
         'success': false,
-        'message': 'Your trial has expired. Please upgrade to continue.',
+        'message':
+        'Your trial has expired. Please upgrade to continue.',
       };
     } else if (response.statusCode == 400) {
       // Case 3: Invalid credentials
       return {
         'success': false,
-        'message': 'Invalid credentials.',
+        'message':  'Invalid credentials.',
       };
     } else {
       // Other error codes
@@ -97,8 +92,8 @@ Future<Map<String, dynamic>> loginUser({
     // Handle other exceptions
     return {
       'success': false,
-      'message':
-          'An error occurred. Please check your connection and try again.',
+      'message': 'An error occurred. Please check your connection and try again.',
     };
   }
 }
+

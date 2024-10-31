@@ -61,7 +61,7 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> sendMessage(String chatTitle, String text) async {
+  Future<void> sendMessage(String chatTitle, String text, String rules) async {
     _isLoading = true; // Set loading state to true
     notifyListeners();
 
@@ -81,7 +81,7 @@ class ChatProvider with ChangeNotifier {
         body: jsonEncode({
           'model': 'gpt-4o-mini', // or 'gpt-4' if you have access
           'messages': [
-            {'role': 'system', 'content': 'You are a helpful assistant.'},
+            {'role': 'system', 'content': '$rules'},
             {'role': 'user', 'content': text},
           ],
           'max_tokens': 1000, // Adjust as needed

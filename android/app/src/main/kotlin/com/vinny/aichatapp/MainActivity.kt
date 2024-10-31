@@ -1,4 +1,4 @@
-package com.example.vinny_ai_chat
+package com.vinny.aichatapp
 
 import io.flutter.embedding.android.FlutterActivity
 

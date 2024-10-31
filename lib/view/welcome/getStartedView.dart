@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:vinny_ai_chat/view/welcome/premimumView.dart';
 
 import '../../helper/transition.dart';
+import '../HomeView/homeView.dart';
 
 class Getstartedview extends StatelessWidget {
   const Getstartedview({super.key});
@@ -16,11 +16,11 @@ class Getstartedview extends StatelessWidget {
           Positioned(
             right: 20,
             bottom:60,child: GestureDetector(
-            onTap: ()=>Navigator.push(
+            onTap: ()=>Navigator.pushAndRemoveUntil(
               context,
               FadePageRouteBuilder(
-                widget:Premimumview(),
-              ),
+                widget:HomeView(),
+              ), (Route<dynamic> route)=>false
             ),
             child: Center(
               child: Container(

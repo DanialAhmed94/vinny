@@ -7,6 +7,7 @@ class AppConstants{
  static final  apiKey = dotenv.env['API_KEY'];
 
  static String baseUrl = "https://stagingvinnyai.appjeeni.com/public/api";
+ static String assetBaseUrl = "https://stagingvinnyai.appjeeni.com/public/asset";
  static String homeUnselected = "assets/svg/homeUnselected.svg";
  static String homeSelected = "assets/svg/homeSelected.svg";
  static String chatSelected = "assets/svg/chatSelected.svg";
@@ -39,6 +40,7 @@ static String privacyIcon= 'assets/svg/privacyIcon.svg';
 static String rateAppIcon= 'assets/svg/rateAppIcon.svg';
 static String shareIcon= 'assets/svg/shareSvgIcon.svg';
 static String feedbackIcon= 'assets/svg/feedbackIcon.svg';
+static String logoutIcon= 'assets/svg/logout.svg';
 
 
  static String duplicateBoatIcon = 'assets/svg/duplicateBoat.svg';
